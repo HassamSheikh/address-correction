@@ -79,39 +79,12 @@ def ExtractDataForFeeder(feeder_index):
 		for x in xrange(len(RawAddressList)):
 			file.write(re.sub(' +',' ', RawAddressList[x].translate(None,digits).translate(None,punctuation).strip()+'\n'))
 		file.close()
-def ExtractSegmentFile():
-	if os.path.isfile(SingleFeederAddresses):
-		if os.path.isfile(SegmentFile):
-			print('Segmentfile Exists')
-		else:
-			with open(SingleFeederAddresses) as f:
-				passage = f.read()
-			words = re.findall(r'\w+', passage)
-			file = open(SegmentFile,'w')
-			word_counts = Counter((words))
-			sorted_x = sorted(word_counts.iteritems(), key=operator.itemgetter(0))
-			for x in xrange(1,len(sorted_x)):
-				if len(sorted_x[x][0].lower())>1 and len(sorted_x[x][0].lower())<9:
-					file.write(sorted_x[x][0].lower()+'\t'+str(sorted_x[x][1]*100000)+'\n')
-				else:
-					2+2
-			file.close()
-	else:
-		print('Data file not available')
 		
-def ReturnLongAddressString(sentence):
-	text1=[]
-	from segment import segment
-	for x in xrange(len(sentence)):
-		sentence[x] = re.sub('[^A-Za-z]+',' ', sentence[x]) 
-		temp_segment = segment(sentence[x])# segmented words using Naive Bayes 
-		for y in xrange(len(temp_segment)):
-			if(len(temp_segment[y])==1):  
-				temp_segment[y]='' 
-		sentence[x]= " ".join(temp_segment) # Joining words again but with spaces in i
-		sentence[x] = re.sub(' +',' ',sentence[x])
-		text1.append(sentence[x].strip()) #creating final address strin
-	return text1
+def semi_structured_address(address):
+  return " ".join(wordy(re.sub(' +',' '," ".join(wordy(segment(re.sub('[^A-Za-z]+',' ', sentence))))).split(' ')))
+
+def wordy(words):
+ return [word for word in words if len(word) > 1]
 
 def word_cluster(text1):
 	vocab_dict = dict()
@@ -216,53 +189,6 @@ def AddressCheck(HamazaQuery,DictionaryFile):
 	except:
 			2+2
 	return(" ".join(correc_answer))
-def SimilarityRaw(AddressArray,Suggestion):
-	score_raw=[]
-	word_area=[]
-	score_meta=[]
-	if(len(AddressArray)>1):
-		answer = doublemetaphone(AddressArray)
-		if (len(answer[0])>1):
-			AddressMeta=answer[0]
-		else:
-			AddressMeta=answer[1]
-		for y in xrange(len(Suggestion)):
-			
-			try:
-				answer = doublemetaphone(Suggestion[y])
-				if (len(answer[0])>1):
-					SuggestMeta=answer[0]
-				else:
-					SuggestMeta=answer[1]
-				score_meta.append(jellyfish.jaro_winkler(SuggestMeta,AddressMeta))
-				score_raw.append(jellyfish.jaro_winkler(Suggestion[y],AddressArray))
-				word_area.append(Suggestion[y])
-			except:
-				4+4;
-	zipped= zip (word_area,score_raw,score_meta)
-	finalAnswer =sorted(zipped, key=operator.itemgetter(0))
-	return finalAnswer
-
-def RelevantWord(Query,limit):
-	score_final=[]
-	word_final=[]
-	for x in xrange(len(Query)):
-		if (Query[x][2]==1.0):
-			score_final.append(0.49*Query[x][1]+0.51*Query[x][2])
-		else:
-			score_final.append(0.68*Query[x][1]+0.32*Query[x][2])
-		word_final.append(str(Query[x][0]))
-	zipped= zip(word_final,score_final)
-	final_Answer =sorted(zipped, key=operator.itemgetter(1),reverse=True)	
-	final_Answer = numpy.array(final_Answer)
-	return (final_Answer[0:limit])
-
-def SpellCheck(CleanAddStr,wordlist):
-	AddressArrayquery = CleanAddStr.lower()
-	wordlist = map(lambda s: s.strip(), wordlist)
-	AllScore= SimilarityRaw(AddressArrayquery,wordlist)
-	NaiveBayesfile = RelevantWord(AllScore,4)
-	return NaiveBayesfile
 
 def PrepareFinalString(Address,cluster,wordlist,abb_list,vocab_dict):
 	from segmentmeta import segmentamt

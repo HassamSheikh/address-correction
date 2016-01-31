@@ -4,14 +4,31 @@ import operator
 import codecs
 import pickle
 from metaphone import doublemetaphone
+import time
+from segment import segment
 
 ADDRESSES_FROM_SINGLE_FEEDER ='feeder'
 DATA_FILE_FOR_WORD_SEGMENTATION = 'word_segmentation'
 
-text        = codecs.open('feeder', 'r').read()
+text = open('feeder','r').read().lower().splitlines()
 
-def get_metaphone_from_word(word):
-  return doublemetaphone(word)[0] if len(doublemetaphone(word)[0]) > 1 else doublemetaphone(word)[1]
+def ReturnLongAddressString(sentence):
+  text1=[]
+  for x in xrange(len(sentence)):
+    temp_segment = segment(sentence[x])# segmented words using Naive Bayes 
+    sentence[x]= re.sub(' +',' '," ".join(wordy(temp_segment))).strip()
+    text1.append(sentence[x]) #creating final address strin
+  return text1
 
-def word_count(text, min_size, max_size):
-    return Counter([get_metaphone_from_word(word.lower()) for word in re.findall(r'\w+', text) if (len(word) < (abs(max_size) + 1) and len(word) > (abs(min_size) - 1) and not unicode(word, 'utf-8').isnumeric())])
+def semi_structured_address(address):
+  return " ".join(wordy(re.sub(' +',' '," ".join(wordy(segment(re.sub('[^A-Za-z]+',' ', sentence))))).split(' ')))
+
+def wordy(words):
+ return [word for word in words if len(word) > 1]
+
+
+time0 = time.time()
+k = map(do_shit, text)
+#k = ReturnLongAddressString(text)
+time1= time.time()
+print ('Time Taken to run this code is '+ str(time1-time0))

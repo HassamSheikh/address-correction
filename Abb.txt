@@ -1,0 +1,19 @@
+ng	new garden
+ext	extension
+ngt	new garden town
+st	street
+no	number
+hno	house number
+ltd	limited
+rd	road
+lhr	lahore
+opp	opposite
+t	town
+h	house
+stno	street number
+pvt	private
+n	new
+g	garden
+gtown	garden town
+hnoa	house number a
+neg	new garden

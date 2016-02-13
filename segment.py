@@ -38,6 +38,8 @@ def dump_into_pickle_file(output_file, word_counts):
         pickle.dump(dict(word_counts), handle)
 
 def word_count(text, min_size, max_size, flag):
+    if isinstance(text, list):
+        text = ''.join(text)
     return Counter([word_or_metaphone(word, flag) for word in re.findall(r'\w+', text) if (len(word) < (abs(max_size) + 1) and len(word) > (abs(min_size) - 1) and not unicode(word, 'utf-8').isnumeric())])
 
 def extract_segmentation_file_from_text(text, output_file, min_size, max_size, **kwargs):

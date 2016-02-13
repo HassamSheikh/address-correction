@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 English Word Segmentation in Python
 
@@ -11,40 +9,60 @@ machines too. Use `segment` to parse a phrase into its parts:
 >>> from wordsegment import segment
 >>> segment('thisisatest')
 ['this', 'is', 'a', 'test']
-
-In the code, 1024908267229 is the total number of words in the corpus. A
-subset of this corpus is found in unigrams.txt and bigrams.txt which
-should accompany this file. A copy of these files may be found at
-http://norvig.com/ngrams/ under the names count_1w.txt and count_2w.txt
-respectively.
-
-# Copyright (c) 2014 by Grant Jenks
-
-Based on code from the chapter "Natural Language Corpus Data"
-from the book "Beautiful Data" (Segaran and Hammerbacher, 2009)
-http://oreilly.com/catalog/9780596157111/
-
-Original Copyright (c) 2008-2009 by Peter Norvig
 """
-
 import sys
-from os.path import join, dirname, realpath
 from math import log10
 from functools import wraps
+import re
+from collections import Counter
+import operator
+import codecs
+import pickle
+from metaphone import doublemetaphone
 
 if sys.hexversion < 0x03000000:
     range = xrange
 
-def parse_file(filename):
+unigram_counts,bigram_counts, total_count = ("",) * 3
+
+def read_text_for_segmentation_file(input_file):
+    return codecs.open(input_file, 'r').read().lower()
+
+def read_pickle_for_segmentation_file(filename):
+    with open(filename, 'rb') as handle:
+        words = pickle.load(handle)
+    return map(str.lower, words)
+  
+def dump_into_pickle_file(output_file, word_counts):
+    with open(output_file, 'wb') as handle:
+        pickle.dump(dict(word_counts), handle)
+
+def word_count(text, min_size, max_size, flag):
+    return Counter([word_or_metaphone(word, flag) for word in re.findall(r'\w+', text) if (len(word) < (abs(max_size) + 1) and len(word) > (abs(min_size) - 1) and not unicode(word, 'utf-8').isnumeric())])
+
+def extract_segmentation_file_from_text(text, output_file, min_size, max_size, **kwargs):
+    word_counts   = word_count(text, min_size, max_size, True) if kwargs.get('metaphone') else word_count(text, min_size, max_size, False) 
+    dump_into_pickle_file(output_file, word_counts)
+
+def word_or_metaphone(word, flag):
+    return get_metaphone_from_word(word) if flag else word
+  
+def load_data_from_pickle_file(filename):
+    with open(filename, 'rb') as handle:
+        words = pickle.load(handle)
+    return words
+
+def get_metaphone_from_word(word):
+  return doublemetaphone(word)[0] if len(doublemetaphone(word)[0]) > 1 else doublemetaphone(word)[1]
+
+def load_data_from_text_file(filename):
     """Read `filename` and parse tab-separated file of (word, count) pairs."""
     with open(filename) as fptr:
         lines = (line.split('\t') for line in fptr)
-        return dict((word, float(number)) for word, number in lines)
+        return dict((word, number) for word, number in lines)
 
-unigram_counts = parse_file('SegmentFile.txt')
-total_count=sum(unigram_counts.values())
-#print (unigram_counts)
-bigram_counts = parse_file('SegmentFile.txt')#parse_file(join(dirname(realpath(__file__)), 'wordsegment_data', 'bigrams.txt'))
+def change_data_values_to_float(data, factor):
+    return {key: float(value * factor) for key, value in data.items()}
 
 def memoize(func):
     """Memoize arguments to function `func`."""
@@ -57,46 +75,33 @@ def memoize(func):
     return wrapper
 
 def divide(text, limit=50):
-    """
-    Yield (prefix, suffix) pairs from text with len(prefix) not
-    exceeding `limit`.
-    """
     for pos in range(1, min(len(text), limit) + 1):
         yield (text[:pos], text[pos:])
 
 def score(word, prev=None):
-    """Score a `word` in the context of the previous word, `prev`."""
-
     if prev is None:
         if word in unigram_counts:
-
-            # Probability of the given word.
-
             return unigram_counts[word] / total_count
         else:
-            # Penalize words not found in the unigrams according
-            # to their length, a crucial heuristic.
-
             return 10.0 / (total_count * 10 ** len(word))
     else:
         bigram = '{0} {1}'.format(prev, word)
-
         if bigram in bigram_counts and prev in unigram_counts:
-
-            # Conditional probability of the word given the previous
-            # word. The technical name is *stupid backoff* and it's
-            # not a probability distribution but it works well in
-            # practice.
-
             return bigram_counts[bigram] / total_count / score(prev)
         else:
-            # Fall back to using the unigram probability.
-
             return score(word)
 
-def segment(text):
-    """Return a list of words that is the best segmenation of `text`."""
+def set_segmentation_data(segment_data, **kwargs):
+    global unigram_counts, total_count, bigram_counts
+    factor                        = kwargs.get('factor') if kwargs.get('factor') > 1 else 1
+    unigram_counts, bigram_counts = (change_data_values_to_float(segment_data, factor),) * 2
+    total_count                   = sum(unigram_counts.values())
 
+def segment(text, **kwargs):
+    factor                        = kwargs.get('factor') if kwargs.get('factor') > 1 else 1
+    if bool(unigram_counts) is False or 'segment_data' in kwargs:
+        set_segmentation_data(kwargs.get('segment_data'), factor = factor)
+    
     @memoize
     def search(text, prev='<S>'):
         if text == '':
@@ -113,33 +118,3 @@ def segment(text):
     result_score, result_words = search(text)
 
     return result_words
-
-def main(args=''):
-    """
-    Command-line entry-point. Parses args into in-file and out-file then
-    reads lines from infile, segments the lines, and writes the result
-    to outfile. Input and output default to stdin and stdout respectively.
-    """
-    import argparse
-
-    parser = argparse.ArgumentParser(description='English Word Segmentation')
-    
-    parser.add_argument('infile', nargs='?', type=argparse.FileType('r'),
-                        default=sys.stdin)
-    parser.add_argument('outfile', nargs='?', type=argparse.FileType('w'),
-                        default=sys.stdout)
-
-    args = parser.parse_args(args)
-
-    for line in args.infile:
-        args.outfile.write(' '.join(segment(line)))
-
-if __name__ == '__main__':
-    main(sys.argv[1:])
-
-__title__ = 'English Word Segmentation'
-__version__ = '0.3'
-__build__ = 0x0003
-__author__ = 'Grant Jenks'
-__license__ = 'Apache 2.0'
-__copyright__ = 'Copyright (c) 2014 Grant Jenks'

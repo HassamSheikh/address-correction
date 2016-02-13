@@ -81,6 +81,8 @@ def extract_data_for_feeder(feeder_index):
 def remove_digits_and_punctuations_from_string(str):
   return str.translate(None, string.digits).translate(None, string.punctuation).lstrip()
 		
+
+
 def semi_structured_address(address):
   return " ".join(wordy(re.sub(' +',' '," ".join(wordy(segment(re.sub('[^A-Za-z]+',' ', sentence))))).split(' ')))
 

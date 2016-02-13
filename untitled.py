@@ -1,34 +1,30 @@
-import re
-from collections import Counter
-import operator
 import codecs
+import operator
+import pandas
 import pickle
-from metaphone import doublemetaphone
+import re
+import segment
+import string
 import time
-from segment import segment
+from metaphone import doublemetaphone
+from collections import Counter
 
-ADDRESSES_FROM_SINGLE_FEEDER ='feeder'
+DATA                            = pandas.read_csv("lahore.csv")
+ALL_FEEDERS_LIST                = sorted(DATA['50401'].unique())
+ADDRESSES_FROM_SINGLE_FEEDER    = 'feeder'
 DATA_FILE_FOR_WORD_SEGMENTATION = 'word_segmentation'
 
-text = open('feeder','r').read().lower().splitlines()
+def extract_data_for_feeder(feeder_index):
+  address_list = map(remove_digits_and_punctuations_from_string, DATA[DATA['50401'] == ALL_FEEDERS_LIST[feeder_index]][DATA.columns[9]].tolist())
+  with open(ADDRESSES_FROM_SINGLE_FEEDER,'wb') as f:
+    pickle.dump(address_list, f)
 
-def ReturnLongAddressString(sentence):
-  text1=[]
-  for x in xrange(len(sentence)):
-    temp_segment = segment(sentence[x])# segmented words using Naive Bayes 
-    sentence[x]= re.sub(' +',' '," ".join(wordy(temp_segment))).strip()
-    text1.append(sentence[x]) #creating final address strin
-  return text1
-
-def semi_structured_address(address):
-  return " ".join(wordy(re.sub(' +',' '," ".join(wordy(segment(re.sub('[^A-Za-z]+',' ', sentence))))).split(' ')))
-
-def wordy(words):
- return [word for word in words if len(word) > 1]
+def remove_digits_and_punctuations_from_string(str):
+  return str.translate(None, string.digits).translate(None, string.punctuation).lstrip()
 
 
-time0 = time.time()
-k = map(do_shit, text)
-#k = ReturnLongAddressString(text)
-time1= time.time()
-print ('Time Taken to run this code is '+ str(time1-time0))
+def create_data_for_processing(feeder_number):
+  extract_data_for_feeder(ALL_FEEDERS_LIST.index(feeder_number))
+  addresses = segment.read_pickle_for_segmentation_file(ADDRESSES_FROM_SINGLE_FEEDER)
+  segment.extract_segmentation_file_from_text(addresses, DATA_FILE_FOR_WORD_SEGMENTATION, 2, 8)
+

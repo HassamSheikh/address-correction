@@ -22,8 +22,10 @@ try :
 	os.remove('segment.pyc')
 except:
 	print ' not found'
-data = pandas.read_csv("lahore.csv")	
-all_feeders = sorted(data['50401'].unique())
+DATA = pandas.read_csv("lahore.csv")	
+ALL_FEEDERS_LIST = sorted(DATA['50401'].unique())
+FEEDER_FILE = 'raw'
+
 SingleFeederAddresses='SingleFeederAddresses'
 SegmentFile= 'SegmentFile.txt'
 vocab_dict_file ='vocab_dict'
@@ -70,15 +72,14 @@ def StartInterface(Query,feeder_number):
 		print ('Feeder not in list')
 	return Answer
 
-def ExtractDataForFeeder(feeder_index):
-	RawAddressList = map(str.lstrip, data[data['50401'] == all_feeders[feeder_index]][data.columns[9]].tolist())
-	if os.path.isfile(SingleFeederAddresses):
-		print('File exists')
-	else:
-		file = open(SingleFeederAddresses,'w')
-		for x in xrange(len(RawAddressList)):
-			file.write(re.sub(' +',' ', RawAddressList[x].translate(None,digits).translate(None,punctuation).strip()+'\n'))
-		file.close()
+
+def extract_data_for_feeder(feeder_index):
+  address_list = map(remove_digits_and_punctuations_from_string, data[data['50401'] == all_feeders[feeder_index]][data.columns[9]].tolist())
+  with open(FEEDER_FILE,'wb') as f:
+    pickle.dump(address_list, f)
+
+def remove_digits_and_punctuations_from_string(str):
+  return str.translate(None, string.digits).translate(None, string.punctuation).lstrip()
 		
 def semi_structured_address(address):
   return " ".join(wordy(re.sub(' +',' '," ".join(wordy(segment(re.sub('[^A-Za-z]+',' ', sentence))))).split(' ')))

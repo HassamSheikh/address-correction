@@ -23,52 +23,6 @@ try :
 except:
 	print ' not found'
 
-SingleFeederAddresses='SingleFeederAddresses'
-SegmentFile= 'SegmentFile.txt'
-vocab_dict_file ='vocab_dict'
-abb_list_file='Abb.txt'
-output_file='outputfile'
-DictionaryFile= dict()
-def StartInterface(Query,feeder_number):
-	os.chdir(os.path.dirname(os.path.realpath(__file__)))
-	if(feeder_number in all_feeders):
-		if not os.path.exists(str(feeder_number)):
-			os.makedirs(str(feeder_number))
-			os.chdir(str(feeder_number))
-		else:
-			os.chdir(str(feeder_number))
-		try:
-			shutil.copy(os.path.dirname(os.path.realpath(__file__))+'/segment.py',os.getcwd())
-			shutil.copy(os.path.dirname(os.path.realpath(__file__))+'/segmentmeta.py',os.getcwd())
-			shutil.copy(os.path.dirname(os.path.realpath(__file__))+'/WordFrequencyFeedMetaphone.txt',os.getcwd())
-		except:
-			0+3
-		ExtractDataForFeeder(all_feeders.index(feeder_number))
-		ExtractSegmentFile()
-		py_compile.compile('segment.py')
-		from segment import segment
-		with open(SingleFeederAddresses) as f:
-			sentence = f.readlines()
-		if os.path.isfile('vocab_dict'):
-			if feeder_number in DictionaryFile:
-				time0 = time.time()
-				Answer = AddressCheck(Query,DictionaryFile[feeder_number])
-				time1= time.time()
-				print ('Time Taken to run this code is '+ str(time1-time0))
-			else:
-				time0 = time.time()
-				DictionaryFile[feeder_number]=(word_cluster(ReturnLongAddressString(sentence)))
-				time1= time.time()
-				print ('Time Taken to run this code is '+ str(time1-time0))
-				Answer = AddressCheck(Query,DictionaryFile[feeder_number])
-		else:
-			DictionaryFile[feeder_number]=(word_cluster(ReturnLongAddressString(sentence)))
-			DictionaryCreation(DictionaryFile[feeder_number])
-			Answer = AddressCheck(Query,DictionaryFile[feeder_number])
-	else:
-		print ('Feeder not in list')
-	return Answer
-
 DATA                            = pandas.read_csv("lahore.csv")
 ALL_FEEDERS_LIST                = sorted(DATA['50401'].unique())
 ADDRESSES_FROM_SINGLE_FEEDER    = 'feeder'

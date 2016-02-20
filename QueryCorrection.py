@@ -12,7 +12,6 @@ import shutil
 import nltk
 from metaphone import *
 from jellyfish import jaro_distance
-from jellyfish import levenshtein_distance
 import jellyfish
 import numpy
 import csv
